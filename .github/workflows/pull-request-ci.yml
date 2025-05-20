@@ -1,0 +1,16 @@
+name: PR CI
+
+on:
+  pull_request:
+    branches: ["dev"]
+  # In urgent cases we allow to manually trigger this step
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  ci:
+    uses: careem/shared-workflows/.github/workflows/nodejs.yml@master
+    name: Test & Build
+    secrets: inherit
+    with:
+      node-version: 18.20.5

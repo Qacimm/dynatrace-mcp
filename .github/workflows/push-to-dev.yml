@@ -1,0 +1,43 @@
+
+name: CI & Deploy to QA
+
+on:
+  push:
+    branches: [ "dev" ]
+
+  workflow_dispatch:
+    inputs:
+      action:
+        type: choice
+        description: Name of DevX action
+        options:
+        - install
+        - force_install
+
+jobs:
+  ci:
+    name: Test & Build
+    secrets: inherit
+    uses: ./.github/workflows/pull-request-ci.yml
+
+  docker-build:
+    uses: careem/shared-workflows/.github/workflows/ecr-publish.yml@master
+    needs: [ci]
+    secrets: inherit
+
+  deploy-qa:
+    needs: [docker-build]
+    name: Deploy Staging
+    uses: careem/shared-workflows/.github/workflows/devx.yml@master
+    secrets: inherit
+    with:
+      service-name: ${{ vars.SERVICE_NAME }}
+      env: staging
+      profile: staging-mot
+      action: ${{ github.event.inputs.action || 'install'  }}
+
+  draft-release:
+    if: github.ref_name == 'master'
+    name: "Draft Release"
+    needs: [deploy-qa]
+    uses: careem/shared-workflows/.github/workflows/draft-release.yml@master
